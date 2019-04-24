@@ -48,51 +48,52 @@ func main() {
 	case "getAll":
 		queues := []string{"pools", "stats", "databases"}
 		// z := zabbix.NewSender(zbxServer, 10051)
+		var packet *zabbix.Packet
 		for _, q := range queues {
-			packet, err := getData(db, q)
+			packet, err = getData(db, q)
 			if err != nil {
 				log.Fatal(err)
 			}
-			// ok we got packet for zabbix sender let's send it
-			dataPacket, _ := json.Marshal(packet)
-			fmt.Println(string(dataPacket))
-			// _, err = z.Send(packet)
-			// if err != nil {
-			// 	log.Fatal(err)
-			// }
 		}
+		// ok we got packet for zabbix sender let's send it
+		dataPacket, _ := json.MarshalIndent(packet, "", "   ")
+		fmt.Println(string(dataPacket))
+		// _, err = z.Send(packet)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
 		// This value for item indicates good status
 		fmt.Println("OK")
 
 	case "getConfig":
-		z := zabbix.NewSender(zbxServer, 10051)
+		// z := zabbix.NewSender(zbxServer, 10051)
 		packet, err := getConfig(db)
 		if err != nil {
 			log.Fatal(err)
 		}
 		// ok we got packet for zabbix sender let's send it
-		// dataPacket, _ := json.Marshal(packet)
-		// fmt.Println(string(dataPacket))
-		_, err = z.Send(packet)
-		if err != nil {
-			log.Fatal(err)
-		}
+		dataPacket, _ := json.MarshalIndent(packet, "", "  ")
+		fmt.Println(string(dataPacket))
+		// _, err = z.Send(packet)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
 		// This value for item indicates good status
 		fmt.Println("OK")
 
 	case "getClients":
-		z := zabbix.NewSender(zbxServer, 10051)
+		// z := zabbix.NewSender(zbxServer, 10051)
 		packet, err := getClients(db)
 		if err != nil {
 			log.Fatal(err)
 		}
 		// ok we got packet for zabbix sender let's send it
-		// dataPacket, _ := json.Marshal(packet)
-		// fmt.Println(string(dataPacket))
-		_, err = z.Send(packet)
-		if err != nil {
-			log.Fatal(err)
-		}
+		dataPacket, _ := json.MarshalIndent(packet, "", "   ")
+		fmt.Println(string(dataPacket))
+		// _, err = z.Send(packet)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
 		// This value for item indicates good status
 		fmt.Println("OK")
 
@@ -106,7 +107,7 @@ func main() {
 func lldUsers(db *sql.DB) error {
 	rows, err := db.Query("show users")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	defer rows.Close()
 	var rec ShowUsers
@@ -118,7 +119,7 @@ func lldUsers(db *sql.DB) error {
 		}
 		res.Data = append(res.Data, rec)
 	}
-	resJSON, err := json.Marshal(res)
+	resJSON, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -132,7 +133,7 @@ func lldDb(db *sql.DB) error {
 
 	rows, err := db.Query("show pools")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	defer rows.Close()
 	var rec ShowPool
@@ -162,7 +163,7 @@ func lldDb(db *sql.DB) error {
 func getVer() string {
 	out, err := exec.Command("/usr/sbin/pgbouncer", "-V").Output()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	return string(out)
 }
@@ -321,7 +322,7 @@ func lld(db *sql.DB) error {
 			continue
 		}
 	}
-	resJSON, err := json.Marshal(res)
+	resJSON, err := json.MarshalIndent(res, "", "   ")
 	if err != nil {
 		return err
 	}
