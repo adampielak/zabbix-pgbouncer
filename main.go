@@ -11,8 +11,6 @@ import (
 
 	"github.com/blacked/go-zabbix"
 	_ "github.com/lib/pq" // I comment extra_float_digits param in this module. Otherwise it crashes on pgbouncer connection.
-	// _ "github.com/jackc/pgx/stdlib"
-	// _ "github.com/jbarham/gopgsqldriver"
 )
 
 var (
@@ -38,7 +36,7 @@ func main() {
 	defer db.Close()
 	switch command {
 	case "lld":
-		err := lldDb(db)
+		err := lld(db)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -49,19 +47,19 @@ func main() {
 		}
 	case "getAll":
 		queues := []string{"pools", "stats", "databases"}
-		z := zabbix.NewSender(zbxServer, 10051)
+		// z := zabbix.NewSender(zbxServer, 10051)
 		for _, q := range queues {
 			packet, err := getData(db, q)
 			if err != nil {
 				log.Fatal(err)
 			}
 			// ok we got packet for zabbix sender let's send it
-			// dataPacket, _ := json.Marshal(packet)
-			// fmt.Println(string(dataPacket))
-			_, err = z.Send(packet)
-			if err != nil {
-				log.Fatal(err)
-			}
+			dataPacket, _ := json.Marshal(packet)
+			fmt.Println(string(dataPacket))
+			// _, err = z.Send(packet)
+			// if err != nil {
+			// 	log.Fatal(err)
+			// }
 		}
 		// This value for item indicates good status
 		fmt.Println("OK")
@@ -196,9 +194,9 @@ func getData(db *sql.DB, queue string) (packet *zabbix.Packet, err error) {
 
 		dbName := vals[0].(*sql.NullString) // Dbname is 1st column
 		//Skip pgbouncer db
-		if dbName.String == "pgbouncer" {
-			continue
-		}
+		// if dbName.String == "pgbouncer" {
+		// 	continue
+		// }
 
 		for idx, colName := range cols[1:] {
 			key = fmt.Sprintf("pgbouncer.%v[%v,%v]", queue, dbName.String, colName)
@@ -286,4 +284,47 @@ func getClients(db *sql.DB) (packet *zabbix.Packet, err error) {
 	rows.Close()
 	packet = zabbix.NewPacket(metrics)
 	return packet, nil
+}
+
+// This returns LLD struct for zabbix server
+func lld(db *sql.DB) error {
+
+	var res Lld
+	var rec Databases
+	rows, err := db.Query("show pools")
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	cols, err := rows.Columns()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	vals := make([]interface{}, len(cols))
+	for i := range cols {
+		vals[i] = new(sql.NullString)
+	}
+	for rows.Next() {
+		err = rows.Scan(vals...)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		db := vals[0].(*sql.NullString)
+
+		// Check for nil values and send
+		if db.Valid {
+			rec.Database = db.String
+			res.Db = append(res.Db, rec)
+		} else {
+			continue
+		}
+	}
+	resJSON, err := json.Marshal(res)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(resJSON))
+	return nil
 }

@@ -100,3 +100,11 @@ type Data struct {
 type UserData struct {
 	Data []ShowUsers `json:"data"`
 }
+
+type Lld struct {
+	Db []Databases `json:"data"`
+}
+
+type Databases struct {
+	Database string `json:"DATABASE"`
+}
