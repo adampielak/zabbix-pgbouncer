@@ -47,7 +47,7 @@ func main() {
 		}
 	case "getAll":
 		queues := []string{"pools", "stats", "databases"}
-		// z := zabbix.NewSender(zbxServer, 10051)
+		z := zabbix.NewSender(zbxServer, 10051)
 		var packet *zabbix.Packet
 		for _, q := range queues {
 			packet, err = getData(db, q)
@@ -56,44 +56,44 @@ func main() {
 			}
 		}
 		// ok we got packet for zabbix sender let's send it
-		dataPacket, _ := json.MarshalIndent(packet, "", "   ")
-		fmt.Println(string(dataPacket))
-		// _, err = z.Send(packet)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
+		// dataPacket, _ := json.MarshalIndent(packet, "", "   ")
+		// fmt.Println(string(dataPacket))
+		_, err = z.Send(packet)
+		if err != nil {
+			log.Fatal(err)
+		}
 		// This value for item indicates good status
 		fmt.Println("OK")
 
 	case "getConfig":
-		// z := zabbix.NewSender(zbxServer, 10051)
+		z := zabbix.NewSender(zbxServer, 10051)
 		packet, err := getConfig(db)
 		if err != nil {
 			log.Fatal(err)
 		}
 		// ok we got packet for zabbix sender let's send it
-		dataPacket, _ := json.MarshalIndent(packet, "", "  ")
-		fmt.Println(string(dataPacket))
-		// _, err = z.Send(packet)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
+		// dataPacket, _ := json.MarshalIndent(packet, "", "  ")
+		// fmt.Println(string(dataPacket))
+		_, err = z.Send(packet)
+		if err != nil {
+			log.Fatal(err)
+		}
 		// This value for item indicates good status
 		fmt.Println("OK")
 
 	case "getClients":
-		// z := zabbix.NewSender(zbxServer, 10051)
+		z := zabbix.NewSender(zbxServer, 10051)
 		packet, err := getClients(db)
 		if err != nil {
 			log.Fatal(err)
 		}
 		// ok we got packet for zabbix sender let's send it
-		dataPacket, _ := json.MarshalIndent(packet, "", "   ")
-		fmt.Println(string(dataPacket))
-		// _, err = z.Send(packet)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
+		// dataPacket, _ := json.MarshalIndent(packet, "", "   ")
+		// fmt.Println(string(dataPacket))
+		_, err = z.Send(packet)
+		if err != nil {
+			log.Fatal(err)
+		}
 		// This value for item indicates good status
 		fmt.Println("OK")
 
@@ -195,9 +195,9 @@ func getData(db *sql.DB, queue string) (packet *zabbix.Packet, err error) {
 
 		dbName := vals[0].(*sql.NullString) // Dbname is 1st column
 		//Skip pgbouncer db
-		// if dbName.String == "pgbouncer" {
-		// 	continue
-		// }
+		if dbName.String == "pgbouncer" {
+			continue
+		}
 
 		for idx, colName := range cols[1:] {
 			key = fmt.Sprintf("pgbouncer.%v[%v,%v]", queue, dbName.String, colName)
@@ -315,12 +315,16 @@ func lld(db *sql.DB) error {
 		db := vals[0].(*sql.NullString)
 
 		// Check for nil values and send
-		if db.Valid {
+		if db.Valid && db.String != "pgbouncer" {
 			rec.Database = db.String
 			res.Db = append(res.Db, rec)
 		} else {
 			continue
 		}
+	}
+	if res.Db == nil {
+		fmt.Println("{\"data\":[]}")
+		return nil
 	}
 	resJSON, err := json.MarshalIndent(res, "", "   ")
 	if err != nil {

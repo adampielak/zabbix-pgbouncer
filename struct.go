@@ -101,10 +101,12 @@ type UserData struct {
 	Data []ShowUsers `json:"data"`
 }
 
+// Lld represents Databases lld data sended to zabbix-server
 type Lld struct {
 	Db []Databases `json:"data"`
 }
 
+// Databases is a list og database names discovered via lld
 type Databases struct {
-	Database string `json:"DATABASE"`
+	Database string `json:"{#DATABASE}"`
 }
