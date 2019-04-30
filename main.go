@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/blacked/go-zabbix"
-	_ "github.com/lib/pq" // I comment extra_float_digits param in this module. Otherwise it crashes on pgbouncer connection.
+	_ "github.com/lib/pq"
 )
 
 var (
